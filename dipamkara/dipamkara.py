@@ -1,34 +1,36 @@
+import logging
+
 import numpy
 import os
 import json
 
-from bhakti.const import (
+from dipamkara.const import (
     EMPTY_DICT,
     EMPTY_STR,
     EMPTY_LIST,
     UTF_8,
     NULL
 )
-from bhakti.database.dipamkara.dipamkara_dsl import (
+from dipamkara.dipamkara_dsl import (
     DIPAMKARA_DSL,
     find_keywords_of_dipamkara_dsl
 )
-from bhakti.database.dipamkara.lock import (
+from dipamkara.lock import (
     vector_modify_lock,
     inverted_index_modify_lock,
     document_modify_lock,
     auto_increment_lock
 )
-from bhakti.database.dipamkara.embedding import find_distance, Metric
-from bhakti.util.logger import log
-from bhakti.database.dipamkara.exception.dipamkara_vector_error import DipamkaraVectorError
-from bhakti.database.dipamkara.exception.dipamkara_index_error import DipamkaraIndexError
-from bhakti.database.dipamkara.exception.dipamkara_index_existence_error import DipamkaraIndexExistenceError
-from bhakti.database.dipamkara.exception.dipamkara_vector_existence_error import DipamkaraVectorExistenceError
-from bhakti.database.dipamkara.decorator.lock_on import lock_on
+from dipamkara.embedding import find_distance, Metric
+from dipamkara.exception.dipamkara_vector_error import DipamkaraVectorError
+from dipamkara.exception.dipamkara_dimension_error import DipamkaraDimensionError
+from dipamkara.exception.dipamkara_index_error import DipamkaraIndexError
+from dipamkara.exception.dipamkara_index_existence_error import DipamkaraIndexExistenceError
+from dipamkara.exception.dipamkara_vector_existence_error import DipamkaraVectorExistenceError
+from dipamkara.decorator.lock_on import lock_on
+from dipamkara import __VERSION__
 
-__VERSION__ = "0.3.8"
-__AUTHOR__ = "Vortez Wohl"
+log = logging.getLogger("dipamkara")
 
 
 class Dipamkara:
@@ -107,7 +109,7 @@ class Dipamkara:
             with open(self.__archive_vec, 'w') as vec_file:
                 vec_file.write(EMPTY_STR())
         else:
-            log.info('Initializing vectors...')
+            log.debug('Initializing vectors...')
             with open(self.__archive_vec, 'r', encoding=UTF_8) as vec_file:
                 _vec_file_text = vec_file.read()
             if _vec_file_text != EMPTY_STR():
@@ -118,7 +120,7 @@ class Dipamkara:
             with open(self.__archive_inv, 'w') as inv_file:
                 inv_file.write(EMPTY_STR())
         else:
-            log.info('Initializing inverted_indices...')
+            log.debug('Initializing inverted_indices...')
             with open(self.__archive_inv, 'r', encoding=UTF_8) as inv_file:
                 _inv_file_text = inv_file.read()
             if _inv_file_text != EMPTY_STR():
@@ -128,7 +130,7 @@ class Dipamkara:
         if not os.path.exists(self.__archive_zen):
             os.mkdir(self.__archive_zen)
         else:
-            log.info('Initializing auto_increment...')
+            log.debug('Initializing auto_increment...')
             entries = os.listdir(self.__archive_zen)
             for entry in entries:
                 self.__auto_increment_ptr = max(
@@ -139,14 +141,14 @@ class Dipamkara:
             self.__auto_increment_ptr += 1
             # load documents into memory
             if self.__cached:
-                log.info('Caching data to memory...')
+                log.debug('Caching data to memory...')
                 for _id in entries:
                     _path = os.path.join(self.__archive_zen, _id)
                     with open(_path, 'r', encoding=UTF_8) as _doc:
                         _doc_text = _doc.read()
                     if _doc_text != EMPTY_STR():
                         self.__document[int(_id)] = json.loads(_doc_text)
-        log.info('Dipamkara initialized')
+        log.debug('Dipamkara initialized')
 
     @property
     def vectors(self):
@@ -244,14 +246,14 @@ class Dipamkara:
             bool: True if the document was successfully created, False otherwise.
 
         Raises:
-            DipamkaraVectorError: If the vector dimensions do not match the expected dimension.
+            DipamkaraDimensionError: If the vector dimensions do not match the expected dimension.
             DipamkaraVectorExistenceError: If the vector already exists.
             DipamkaraIndexError: If an index key does not exist in the document.
         """
         if indices is None:
             indices = EMPTY_LIST()
         if vector.shape[0] != self.__dimension:
-            raise DipamkaraVectorError(f'Vector {vector} is {vector.shape[0]}-dimensional '
+            raise DipamkaraDimensionError(f'Vector {vector} is {vector.shape[0]}-dimensional '
                              f'which should be {self.__dimension}-dimensional')
         vector_str = json.dumps(vector.tolist(), ensure_ascii=True)
         # prefilter
@@ -333,6 +335,8 @@ class Dipamkara:
             if _doc_id in self.__document.keys():
                 del self.__document[_doc_id]
                 return True
+            else:
+                return False
         else:
             raise DipamkaraVectorExistenceError(f'Vector {vector} not exists')
 
@@ -494,7 +498,7 @@ class Dipamkara:
             vector: numpy.ndarray,
             metric: Metric,
             top_k: int
-    ) -> list[tuple[numpy.ndarray, float]]:
+    ) -> list[tuple[numpy.ndarray, numpy.float64]]:
         """
         Performs a vector query to find the top_k nearest neighbors for a given vector.
 
@@ -507,7 +511,7 @@ class Dipamkara:
             List[Tuple[numpy.ndarray, float]]: A list of tuples, each containing a nearest neighbor vector
             and its distance to the query vector.
         """
-        _result: list[tuple[numpy.ndarray, float]] = EMPTY_LIST()
+        _result: list[tuple[numpy.ndarray, numpy.float64]] = EMPTY_LIST()
         for _vec in self.__vector.keys():
             _nd_arr = numpy.asarray(json.loads(_vec))
             _tmp_tuple = _nd_arr, find_distance(
@@ -527,7 +531,7 @@ class Dipamkara:
             vector: numpy.ndarray,
             metric: Metric,
             top_k: int
-    ) -> list[tuple[numpy.ndarray, float]]:
+    ) -> list[tuple[numpy.ndarray, numpy.float64]]:
         """
         Performs a vector query on documents that match a given DSL query, finding the k nearest neighbors.
 
@@ -541,7 +545,7 @@ class Dipamkara:
             List[Tuple[numpy.ndarray, float]]: A list of tuples, each containing a nearest neighbor vector that matches
             the query and its distance to the query vector.
         """
-        _result: list[tuple[numpy.ndarray, float]] = EMPTY_LIST()
+        _result: list[tuple[numpy.ndarray, numpy.float64]] = EMPTY_LIST()
         vectors_challenged = await self.__indexed_query(query)
         for _vec in vectors_challenged:
             _nd_arr = numpy.asarray(json.loads(_vec))
@@ -564,7 +568,7 @@ class Dipamkara:
             metric: Metric,
             top_k: int,
             cached: bool = False
-    ) -> list[dict[str, any]]:
+    ) -> list[tuple[dict[str, any], numpy.float64]]:
         """
         Finds documents that correspond to the top_k nearest vectors to the given vector.
 
@@ -586,7 +590,7 @@ class Dipamkara:
         for _vec, distance in knn_vectors:
             # 返回深拷贝
             _result_set.append(
-                dict(self.__find_doc_by_vector(vector=_vec, cached=cached))
+                (dict(self.__find_doc_by_vector(vector=_vec, cached=cached)), distance)
             )
         return _result_set
 
@@ -600,7 +604,7 @@ class Dipamkara:
             metric: Metric,
             top_k: int,
             cached: bool = False
-    ) -> list[dict[str, any]]:
+    ) -> list[tuple[dict[str, any], numpy.float64]]:
         """
         Finds documents that correspond to the top_k nearest vectors to the given vector and match a DSL query.
 
@@ -625,7 +629,7 @@ class Dipamkara:
         for _vec, distance in knn_vectors:
             # 返回深拷贝
             _result_set.append(
-                dict(self.__find_doc_by_vector(vector=_vec, cached=cached))
+                (dict(self.__find_doc_by_vector(vector=_vec, cached=cached)), distance)
             )
         return _result_set
 

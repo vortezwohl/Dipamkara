@@ -1,6 +1,6 @@
-from bhakti.const import EMPTY_SET, EMPTY_STR, EMPTY_DICT
-from bhakti.database.dipamkara.exception import DipamkaraSyntaxError
-from bhakti.database.dipamkara.exception.dipamkara_index_error import DipamkaraIndexError
+from dipamkara.const import EMPTY_SET, EMPTY_STR, EMPTY_DICT
+from dipamkara.exception import DipamkaraSyntaxError
+from dipamkara.exception.dipamkara_index_error import DipamkaraIndexError
 
 
 class DipamkaraDsl:
@@ -103,8 +103,9 @@ class DipamkaraDsl:
         if key not in self.__inverted_index.keys():
             raise DipamkaraSyntaxError(message=f"Index \"{key}\" not exist")
         elif self.__inverted_index[key] == EMPTY_DICT():
-            del self.__inverted_index[key]
-            raise DipamkaraSyntaxError(message=f"Index \"{key}\" not exist")
+            # del self.__inverted_index[key]
+            # raise DipamkaraSyntaxError(message=f"Index \"{key}\" not exist")
+            return EMPTY_SET()
         op = tokens[1]  # > < >= <= != ==
         if self.is_number(tokens[2]):
             value = float(tokens[2])

@@ -1,8 +1,8 @@
 import numpy
 
-from bhakti.database.dipamkara.embedding.normalize import l2_normalize, z_score_normalize
-from bhakti.database.dipamkara.embedding.metric import Metric
-from bhakti.database.dipamkara.exception.dipamkara_metric_not_support_error import DipamkaraMetricNotSupportedError
+from dipamkara.embedding.normalize import l2_normalize, z_score_normalize
+from dipamkara.embedding.metric import Metric
+from dipamkara.exception.dipamkara_metric_not_support_error import DipamkaraMetricNotSupportedError
 
 
 def find_cosine_distance(
@@ -28,8 +28,8 @@ def find_euclidean_distance(
 def find_chebyshev_distance(
         source_embedding: numpy.ndarray,
         test_embedding: numpy.ndarray
-):
-    return numpy.max(numpy.abs(source_embedding - test_embedding))
+) -> numpy.float64:
+    return numpy.float64(numpy.max(numpy.abs(source_embedding - test_embedding)))
 
 
 def find_distance(
