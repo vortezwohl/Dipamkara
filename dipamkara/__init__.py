@@ -1,4 +1,2 @@
 import dipamkara.logger
-
-__VERSION__ = "0.3.8"
-__AUTHOR__ = "Vortez Wohl"
+from .dipamkara import Dipamkara, __AUTHOR__, __VERSION__

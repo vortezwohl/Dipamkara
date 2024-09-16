@@ -28,9 +28,10 @@ from dipamkara.exception.dipamkara_index_error import DipamkaraIndexError
 from dipamkara.exception.dipamkara_index_existence_error import DipamkaraIndexExistenceError
 from dipamkara.exception.dipamkara_vector_existence_error import DipamkaraVectorExistenceError
 from dipamkara.decorator.lock_on import lock_on
-from dipamkara import __VERSION__
 
 log = logging.getLogger("dipamkara")
+__VERSION__ = "0.3.8"
+__AUTHOR__ = "Vortez Wohl"
 
 
 class Dipamkara:
