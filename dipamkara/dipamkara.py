@@ -85,6 +85,7 @@ class Dipamkara:
         self.__inverted_index: dict[str,
             dict[str, any]
         ] = EMPTY_DICT()
+        self.__dimension = dimension
         # vectors are stored as string
         # dict[vector_unique, document_id]
         self.__vector: dict[str, int] = EMPTY_DICT()
@@ -93,15 +94,16 @@ class Dipamkara:
         dict[str, any]
         ] = EMPTY_DICT()
         self.__archive_path = archive_path
+        self.__archive_dim = os.path.join(self.__archive_path, '.dim')
         self.__archive_inv = os.path.join(self.__archive_path, '.inv')
         self.__archive_vec = os.path.join(self.__archive_path, '.vec')
         self.__archive_zen = os.path.join(self.__archive_path, 'zen')
         self.__auto_increment_ptr = NULL
-        self.__dimension = dimension
 
         log.info(f'Dipamkara v{__VERSION__}')
 
         # .vec .inv 采用异步快照，.zen 采用同步存储
+        # 数据库在创建之初会指定 dim，后续不可再更改
         if not os.path.exists(archive_path):
             os.mkdir(archive_path)
 
@@ -115,6 +117,19 @@ class Dipamkara:
                 _vec_file_text = vec_file.read()
             if _vec_file_text != EMPTY_STR():
                 self.__vector = json.loads(_vec_file_text)
+
+        # define when init
+        if not os.path.exists(self.__archive_dim):
+            with open(self.__archive_dim, 'w') as dim_file:
+                dim_file.write(json.dumps(self.__dimension))
+        else:
+            with open(self.__archive_dim, 'r', encoding=UTF_8) as dim_file:
+                _dim = dim_file.read()
+            if _dim != EMPTY_STR():
+                _dim_num = json.loads(_dim)
+                if _dim_num != self.__dimension:
+                    log.warning(f'Dimension has been corrected to {_dim_num} instead of {self.__dimension} based on existing data.')
+                    self.__dimension = _dim_num
 
         # always cache
         if not os.path.exists(self.__archive_inv):
