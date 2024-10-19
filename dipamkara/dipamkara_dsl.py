@@ -179,6 +179,8 @@ class DipamkaraDsl:
         return result_set
 
     def is_number(self, s: str) -> bool:
+        if s.startswith('-'):
+            s = s[1:]
         if s.count('.') > 1:
             return False
         if s.replace('.', '', 1).isdigit():
