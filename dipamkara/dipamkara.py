@@ -30,7 +30,7 @@ from dipamkara.exception.dipamkara_vector_existence_error import DipamkaraVector
 from dipamkara.decorator.lock_on import lock_on
 
 log = logging.getLogger("dipamkara")
-__VERSION__ = "0.3.8"
+__VERSION__ = "0.3.9"
 __AUTHOR__ = "Vortez Wohl"
 
 

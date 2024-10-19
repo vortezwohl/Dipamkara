@@ -8,7 +8,7 @@ with open("LICENSE", "r", encoding="utf-8") as fh:
 
 setuptools.setup(
     name="dipamkara",
-    version='0.3.8',
+    version='0.3.9',
     author="vortezwohl",
     author_email="vortez.wohl@gmail.com",
     description="A light-weight vector database engine.",
@@ -28,7 +28,7 @@ setuptools.setup(
     packages=setuptools.find_packages(where="."),
     python_requires=">=3.10",
     install_requires=[
-        'numpy>=2.1.1'
+        'numpy'
     ],
     entry_points={},
     include_package_data=False
